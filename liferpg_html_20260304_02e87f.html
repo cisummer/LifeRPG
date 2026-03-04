@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+  <title>LifeRPG · V1.30</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(145deg, #e9f2fa 0%, #d0e3f0 100%);
+      min-height: 100vh;
+      padding: 1.2rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .game-container {
+      max-width: 1400px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 2.5rem;
+      box-shadow: 0 20px 40px -12px #1f4860;
+      padding: 1.8rem;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+    }
+
+    /* 状态栏 */
+    .player-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #1d4a66 0%, #256583 100%);
+      border-radius: 4rem;
+      padding: 0.6rem 1.8rem 0.6rem 1.2rem;
+      margin-bottom: 1.8rem;
+      color: white;
+      border: 2px solid #cbe4fe;
+      box-shadow: inset 0 2px 8px #ffffff80, 0 8px 16px #00000030;
+    }
+
+    .level-area {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: #2e6a8f;
+      padding: 0.3rem 1.5rem 0.3rem 1rem;
+      border-radius: 3rem;
+      border: 1px solid #c2e0ff;
+    }
+
+    .level-badge {
+      font-size: 1.7rem;
+      font-weight: 800;
+      background: #f9d371;
+      color: #1f4430;
+      padding: 0.1rem 1.2rem;
+      border-radius: 3rem;
+      box-shadow: 0 4px 0 #aa8035;
+    }
+
+    .exp-bar {
+      width: 160px;
+      height: 16px;
+      background: #2d4e6b;
+      border-radius: 30px;
+      overflow: hidden;
+      border: 2px solid #ffecb3;
+    }
+
+    .exp-fill {
+      height: 100%;
+      background: #ffdb7e;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .dynamic-char {
+      font-size: 2.2rem;
+      animation: bounce 1.2s infinite ease-in-out;
+      filter: drop-shadow(0 4px 2px #00000030);
+      margin-left: 0.5rem;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .life-points {
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: #2d5977;
+      padding: 0.3rem 2rem;
+      border-radius: 40px;
+      border: 2px solid #b2d9ff;
+      box-shadow: inset 0 2px 5px #ffffff60;
+    }
+
+    #levelUpToast {
+      position: fixed;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffd966;
+      color: #2b4a35;
+      padding: 1rem 3rem;
+      border-radius: 60px;
+      font-weight: 800;
+      font-size: 2rem;
+      box-shadow: 0 10px 30px gold;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    /* 任务添加区 */
+    .add-task-panel {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 2.5rem;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-end;
+      border: 1px solid white;
+    }
+
+    .field {
+      flex: 1 1 140px;
+    }
+
+    .field label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #1b4c66;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 0.6rem 1.2rem;
+      border: 2px solid #c2d9ec;
+      border-radius: 40px;
+      font-size: 0.95rem;
+      background: white;
+      transition: 0.2s;
+    }
+    .field input:focus {
+      border-color: #2b5d7c;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(43,93,124,0.15);
+    }
+
+    .type-tabs {
+      display: flex;
+      gap: 0.3rem;
+      background: #e6f0f7;
+      padding: 0.3rem;
+      border-radius: 48px;
+    }
+
+    .type-tab {
+      padding: 0.5rem 1.2rem;
+      border-radius: 40px;
+      border: none;
+      background: transparent;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.1s;
+    }
+
+    .type-tab.active {
+      background: #2b5d7c;
+      color: white;
+    }
+
+    .primary-btn {
+      background: #287954;
+      color: white;
+      border: none;
+      padding: 0.7rem 2rem;
+      border-radius: 40px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: 0.1s;
+    }
+    .primary-btn:hover {
+      background: #1e6343;
+    }
+
+    /* 两列网格 */
+    .two-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.8rem;
+    }
+
+    @media (max-width: 800px) {
+      .two-columns {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .left-col, .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(8px);
+      border-radius: 2rem;
+      padding: 1.4rem 1.2rem;
+      border: 1px solid white;
+      box-shadow: 0 8px 18px -8px rgba(0,40,60,0.15);
+      display: flex;
+      flex-direction: column;
+      height: fit-content;
+    }
+
+    .panel h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #103a4f;
+      border-bottom: 3px solid #c2daee;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      font-weight: 650;
+      font-size: 1.3rem;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: #ecf3fa;
+      border: none;
+      padding: 0.3rem 1rem;
+      border-radius: 30px;
+      font-weight: 600;
+      color: #1a4f6e;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: 0.1s;
+    }
+
+    .filter-btn.active {
+      background: #336f95;
+      color: white;
+    }
+
+    .task-scroll {
+      max-height: 350px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      padding-right: 0.3rem;
+    }
+
+    /* 统一任务卡片样式 */
+    .task-card {
+      background: white;
+      border-radius: 1.8rem;
+      padding: 0.8rem 1.2rem;
+      border: 1px solid #e1effa;
+      transition: all 0.1s;
+    }
+    .task-card:hover {
+      border-color: #7fa9c7;
+      box-shadow: 0 6px 12px -8px #1f4860;
+    }
+    .task-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.3rem;
+      cursor: pointer;
+    }
+    .task-tag {
+      font-size: 0.75rem;
+      background: #d4e6f7;
+      border-radius: 30px;
+      padding: 0.2rem 0.6rem;
+      font-weight: 600;
+      margin-right: 0.6rem;
+    }
+    .task-reward-badge {
+      font-size: 0.75rem;
+      background: #f0e9d8;
+      padding: 0.15rem 0.8rem;
+      border-radius: 30px;
+      color: #644d2a;
+      display: inline-block;
+      margin: 0.2rem 0;
+      border: 1px solid #eadbbd;
+    }
+    .task-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.3rem;
+    }
+    .action-btn {
+      border: none;
+      padding: 0.2rem 0.8rem;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: 0.1s;
+    }
+    .join-btn {
+      background: #2e9a6e;
+      color: white;
+    }
+    .join-btn:hover {
+      background: #1f7a54;
+    }
+    .remove-btn {
+      background: #c95a5a;
+      color: white;
+    }
+    .remove-btn:hover {
+      background: #b04545;
+    }
+    .delete-task-btn {
+      background: #c95a5a;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      margin-left: auto;
+    }
+    .reactivate-btn {
+      background: #f0b34b;
+      color: white;
+    }
+    .reactivate-btn:hover {
+      background: #d99a2e;
+    }
+
+    /* 今日待办项 */
+    .todo-item {
+      background: #ffffff;
+      border-radius: 1.8rem;
+      padding: 0.8rem 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 2px solid #c0dbef;
+      margin-bottom: 0.5rem;
+    }
+    .todo-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .todo-tag {
+      font-size: 0.75rem;
+      background: #e1effa;
+      border-radius: 30px;
+      padding: 0.2rem 0.8rem;
+    }
+    .todo-reward {
+      font-size: 0.85rem;
+      color: #4f6f8a;
+    }
+    .todo-actions {
+      display: flex;
+      gap: 0.3rem;
+    }
+    .complete-todo-btn {
+      background: #2e9a6e;
+      border: none;
+      padding: 0.3rem 1.2rem;
+      border-radius: 30px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .fail-todo-btn {
+      background: #c95a5a;
+      border: none;
+      padding: 0.3rem 1.2rem;
+      border-radius: 30px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .complete-todo-btn:disabled,
+    .fail-todo-btn:disabled {
+      background: #bbbbbb;
+      cursor: not-allowed;
+    }
+
+    /* 记录条目 */
+    .reward-entry, .fail-entry {
+      border-radius: 1rem;
+      padding: 0.5rem 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    .reward-entry {
+      background: #f9f1df;
+      border-left: 5px solid #f3b33d;
+    }
+    .fail-entry {
+      background: #f0d9d9;
+      border-left: 5px solid #c95a5a;
+    }
+
+    .record-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .record-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .record-tab {
+      background: #ecf3fa;
+      border: none;
+      padding: 0.4rem 1rem;
+      border-radius: 30px;
+      font-weight: 600;
+      color: #1a4f6e;
+      cursor: pointer;
+    }
+    .record-tab.active {
+      background: #336f95;
+      color: white;
+    }
+    .calendar-btn {
+      background: #f0b34b;
+      border: none;
+      padding: 0.4rem 1rem;
+      border-radius: 30px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* 日历弹窗 */
+    .calendar-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 20, 30, 0.5);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+    }
+    .calendar-modal.active {
+      display: flex;
+    }
+    .calendar-content {
+      background: #ffffffec;
+      border-radius: 2.5rem;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 2px solid white;
+    }
+    .calendar-content h3 {
+      margin-bottom: 1rem;
+    }
+    .calendar-date-header {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .calendar-date-header input {
+      flex: 1;
+      padding: 0.7rem;
+      border: 2px solid #c2d9ec;
+      border-radius: 40px;
+    }
+    .clear-day-btn {
+      background: #c95a5a;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* 关于弹窗 */
+    .about-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 20, 30, 0.5);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+    }
+    .about-modal.active {
+      display: flex;
+    }
+    .about-content {
+      background: #ffffffec;
+      border-radius: 2.5rem;
+      padding: 2rem;
+      max-width: 450px;
+      width: 90%;
+      border: 2px solid white;
+      text-align: center;
+    }
+    .about-content h2 {
+      color: #113a4e;
+      margin-bottom: 1rem;
+    }
+    .about-content p {
+      margin: 0.8rem 0;
+      line-height: 1.5;
+    }
+    .about-content button {
+      margin: 0.5rem;
+    }
+
+    /* 任务详情弹窗（已移除总进度） */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 20, 30, 0.5);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: #ffffffec;
+      border-radius: 2.5rem;
+      padding: 2rem;
+      max-width: 550px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 2px solid white;
+    }
+    .modal-content h3 {
+      font-size: 1.6rem;
+      color: #113a4e;
+      margin-bottom: 1rem;
+    }
+    .edit-field {
+      margin: 1rem 0;
+    }
+    .edit-field label {
+      font-weight: 600;
+      color: #235e7c;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+    .edit-field input,
+    .edit-field select {
+      width: 100%;
+      padding: 0.7rem 1.2rem;
+      border: 2px solid #c8def0;
+      border-radius: 40px;
+    }
+    .subtask-item {
+      background: #eaf2fa;
+      border-radius: 2rem;
+      padding: 0.7rem 1.2rem;
+      margin: 0.5rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .subtask-actions {
+      display: flex;
+      gap: 0.3rem;
+    }
+    .subtask-complete-btn {
+      background: #2e9a6e;
+      border: none;
+      padding: 0.2rem 1rem;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+    }
+    .subtask-fail-btn {
+      background: #c95a5a;
+      border: none;
+      padding: 0.2rem 1rem;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+    }
+    .subtask-delete-btn {
+      background: #888;
+      border: none;
+      padding: 0.2rem 0.8rem;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+    }
+    .main-task-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: center;
+    }
+    .close-btn {
+      background: #d94343;
+      color: white;
+      border: none;
+      padding: 0.5rem 1.8rem;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      color: #2d5a73;
+      font-size: 0.9rem;
+    }
+    .about-link {
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dashed;
+    }
+    .about-link:hover {
+      color: #1f4b6e;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="player-status">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="level-area">
+          <span class="level-badge" id="levelDisplay">Lv.1</span>
+          <div class="exp-bar">
+            <div class="exp-fill" id="expBarFill" style="width:0%"></div>
+          </div>
+          <span class="dynamic-char">🏃‍♂️</span>
+        </div>
+        <div class="life-points" id="lifePointsDisplay">❤️ 0 生活值</div>
+      </div>
+    </div>
+    <div id="levelUpToast">✨ 升级啦 ✨</div>
+
+    <!-- 任务添加区 -->
+    <div class="add-task-panel">
+      <div class="field">
+        <label>任务名称</label>
+        <input type="text" id="taskNameInput" placeholder="例: 工作赚钱（三月）">
+      </div>
+      <div class="field">
+        <label>奖励描述</label>
+        <input type="text" id="rewardDescInput" placeholder="例: 月入百万">
+      </div>
+      <div class="field">
+        <label>生活值</label>
+        <input type="number" id="lifeValueInput" value="5" min="1">
+      </div>
+      <div class="type-tabs" id="typeTabs">
+        <button class="type-tab active" data-type="main">💼主线</button>
+        <button class="type-tab" data-type="daily">🔁日常</button>
+        <button class="type-tab" data-type="growth">🌱成长</button>
+      </div>
+      <button class="primary-btn" id="addTaskBtn">➕ 添加</button>
+    </div>
+
+    <!-- 两列布局 -->
+    <div class="two-columns">
+      <!-- 左列：副本任务 + 荣誉殿堂 -->
+      <div class="left-col">
+        <div class="panel">
+          <h2>📚 副本任务</h2>
+          <div class="filter-row" id="taskFilterRow">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="main">主线</button>
+            <button class="filter-btn" data-filter="daily">日常</button>
+            <button class="filter-btn" data-filter="growth">成长</button>
+          </div>
+          <div class="task-scroll" id="taskListContainer"></div>
+        </div>
+        <div class="panel">
+          <h2>🏆 荣誉殿堂</h2>
+          <div class="task-scroll" id="completedPoolContainer"></div>
+        </div>
+      </div>
+
+      <!-- 右列：今日副本 + 记录档案 -->
+      <div class="right-col">
+        <div class="panel">
+          <h2>📋 今日副本</h2>
+          <div class="task-scroll" id="todoContainer" style="max-height: 400px;"></div>
+        </div>
+        <div class="panel">
+          <h2>🏆 记录档案</h2>
+          <div class="record-header">
+            <div class="record-tabs">
+              <button class="record-tab active" data-record="reward">✅ 奖励</button>
+              <button class="record-tab" data-record="fail">❌ 失败</button>
+              <button class="record-tab" data-record="all">📋 全部</button>
+            </div>
+            <button class="calendar-btn" id="openCalendarBtn">📅 日历</button>
+          </div>
+          <div id="recordContainer" class="task-scroll" style="max-height: 250px;"></div>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.8rem; flex-wrap: wrap;">
+            <button id="clearRecordsBtn" style="background:#e0e9f2; border:none; padding:0.4rem 1.2rem; border-radius:30px;">🧹 清空</button>
+            <div class="filter-row" id="recordDateFilterRow" style="margin-bottom:0;">
+              <button class="filter-btn active" data-date-filter="all">全部</button>
+              <button class="filter-btn" data-date-filter="today">今天</button>
+              <button class="filter-btn" data-date-filter="week">本周</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <span class="about-link" id="aboutLink">⭐ 关于本系统 · V1.30</span>
+    </div>
+  </div>
+
+  <!-- 关于弹窗（开发者 HappyZhao） -->
+  <div class="about-modal" id="aboutModal">
+    <div class="about-content">
+      <h2>📋 LifeRPG · V1.30</h2>
+      <p>一个将日常任务游戏化的效率工具</p>
+      <p>✨ 核心功能：</p>
+      <p>· 主线/日常/成长任务分类<br>· 子任务管理<br>· 今日副本手动加入<br>· 荣誉殿堂收纳完成<br>· 奖励/失败记录日历</p>
+      <p>👨‍💻 开发者：HappyZhao</p>
+      <p>📅 版本日期：2025.03</p>
+      <p>🔧 数据存储在浏览器本地</p>
+      <button class="primary-btn" id="resetDataBtn">🔄 清除本地数据并重置为预设</button>
+      <button class="close-btn" id="closeAboutBtn">关闭</button>
+    </div>
+  </div>
+
+  <!-- 任务详情弹窗（已移除总进度） -->
+  <div class="modal" id="taskDetailModal">
+    <div class="modal-content">
+      <h3>✏️ 任务详情</h3>
+      <div class="edit-field">
+        <label>任务名称</label>
+        <input type="text" id="detailName">
+      </div>
+      <div class="edit-field">
+        <label>奖励描述</label>
+        <input type="text" id="detailReward">
+      </div>
+      <div class="edit-field">
+        <label>生活值 / 次</label>
+        <input type="number" id="detailLife">
+      </div>
+      <div class="edit-field">
+        <label>类型</label>
+        <select id="detailType">
+          <option value="main">主线</option>
+          <option value="daily">日常</option>
+          <option value="growth">成长</option>
+        </select>
+      </div>
+      <!-- 总进度已移除 -->
+
+      <!-- 添加子任务内联 -->
+      <div style="background: #eaf2fa; border-radius: 2rem; padding: 1rem; margin: 1rem 0;">
+        <input type="text" id="subtaskNameInput" placeholder="子任务名称" style="padding:0.5rem; border-radius:30px; border:2px solid #c2d9ec; width:100%; margin-bottom:0.5rem;">
+        <select id="subtaskTypeSelect" style="padding:0.5rem; border-radius:30px; width:100%; margin-bottom:0.5rem;">
+          <option value="once">一次性</option>
+          <option value="daily">日常循环</option>
+        </select>
+        <input type="number" id="subtaskLifeInput" placeholder="生活值" value="2" min="1" style="padding:0.5rem; border-radius:30px; width:100%; margin-bottom:0.5rem;">
+        <button id="addSubtaskInlineBtn" class="primary-btn" style="width:100%;">➕ 添加子任务</button>
+      </div>
+
+      <div><strong>子任务列表</strong></div>
+      <div id="subtaskListContainer" style="margin:0.5rem 0;"></div>
+
+      <!-- 主任务操作 -->
+      <div class="main-task-actions">
+        <button id="detailCompleteMainBtn" class="primary-btn">✔️ 完成</button>
+        <button id="detailFailMainBtn" class="close-btn" style="background:#c95a5a;">✖️ 失败</button>
+      </div>
+      <!-- 日常最终完成按钮 -->
+      <div style="text-align: center; margin-top: 0.5rem;" id="finalCompleteContainer">
+        <button id="detailFinalCompleteBtn" style="background:#f0b34b; color:white; border:none; padding:0.5rem 1.5rem; border-radius:30px;">🏁 最终完成（移入荣誉殿堂）</button>
+      </div>
+
+      <div style="display: flex; gap:1rem; margin-top:1.5rem;">
+        <button id="saveTaskDetailBtn" class="primary-btn">保存修改</button>
+        <button id="closeModalBtn" class="close-btn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 日历弹窗 -->
+  <div class="calendar-modal" id="calendarModal">
+    <div class="calendar-content">
+      <h3>📅 按日期查看记录</h3>
+      <div class="calendar-date-header">
+        <input type="date" id="calendarDatePicker">
+        <button class="clear-day-btn" id="clearDayBtn">🗑️ 清除当天</button>
+      </div>
+      <div id="calendarRecordsContainer" style="max-height:400px; overflow-y:auto;"></div>
+      <div style="text-align: right; margin-top: 1rem;">
+        <button id="closeCalendarBtn" class="close-btn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // ---------- 数据模型 ----------
+      let tasks = [];               // 未完成任务池（副本任务）
+      let completedTasks = [];      // 荣誉殿堂
+      let rewards = [];             // 奖励记录（含reward字段）
+      let fails = [];               // 失败记录（需含reward字段）
+      let lifePoints = 0;
+      let level = 1;
+      let consecutiveDays = 0;
+      let lastResetDate = '';
+      let todayCompletedTaskIds = new Set();      // 今日完成的普通任务ID
+      let todayCompletedSubtaskIds = new Set();   // 今日完成的子任务ID
+      let todayFailedTaskIds = new Set();         // 今日失败的任务ID
+      let todayFailedSubtaskIds = new Set();      // 今日失败的子任务ID
+
+      const LIFE_PER_LEVEL = 100;
+
+      let currentRecordTab = 'reward';
+      let recordDateFilter = 'all';
+      let currentFilter = 'all';
+
+      // 当前打开的详情任务ID和来源
+      let currentDetailTaskId = null;
+      let currentDetailTaskSource = null; // 'task' 或 'completed'
+
+      // 存储键名（统一为 LifeRPG_Data）
+      const STORAGE_KEY = 'LifeRPG_Data';
+
+      // 预设数据（修改了 t2 的 reward 为 "月入百万"）
+      function initExampleData() {
+        if (tasks.length) return;
+        const mainTask = {
+          id: 't1',
+          name: '跳槽准备',
+          reward: '新工作 offer',
+          lifeValue: 20,
+          type: 'main',
+          totalProgress: 4,
+          currentProgress: 0,
+          inDailyPool: true,
+          completed: false,
+          subtasks: [
+            { id: 'st1', name: '每天投递简历', type: 'daily', lifeValue: 2, parentId: 't1' },
+            { id: 'st2', name: '第一次面试', type: 'once', lifeValue: 5, parentId: 't1' },
+            { id: 'st3', name: '第二次面试', type: 'once', lifeValue: 5, parentId: 't1' },
+            { id: 'st4', name: '拿到offer', type: 'once', lifeValue: 10, parentId: 't1' }
+          ],
+        };
+        tasks.push(mainTask);
+        // 工作赚钱（三月）奖励改为 月入百万
+        tasks.push({
+          id: 't2',
+          name: '工作赚钱（三月）',
+          reward: '月入百万',
+          lifeValue: 10,
+          type: 'daily',
+          totalProgress: 0,
+          currentProgress: 0,
+          inDailyPool: true,
+          completed: false,
+          subtasks: []
+        });
+        tasks.push({
+          id: 't3',
+          name: '健身环',
+          reward: '奶茶',
+          lifeValue: 5,
+          type: 'daily',
+          totalProgress: 0,
+          currentProgress: 0,
+          inDailyPool: false,
+          completed: false,
+          subtasks: []
+        });
+        tasks.push({
+          id: 't4',
+          name: '阅读技术书',
+          reward: '知识',
+          lifeValue: 8,
+          type: 'growth',
+          totalProgress: 0,
+          currentProgress: 0,
+          inDailyPool: false,
+          completed: false,
+          subtasks: []
+        });
+      }
+
+      // 加载/存储（带旧数据迁移）
+      function loadData() {
+        let saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const data = JSON.parse(saved);
+            tasks = data.tasks || [];
+            completedTasks = data.completedTasks || [];
+            rewards = data.rewards || [];
+            fails = data.fails || [];
+            lifePoints = data.lifePoints || 0;
+            consecutiveDays = data.consecutiveDays || 0;
+            lastResetDate = data.lastResetDate || '';
+            todayCompletedTaskIds = new Set(data.todayCompletedTaskIds || []);
+            todayCompletedSubtaskIds = new Set(data.todayCompletedSubtaskIds || []);
+            todayFailedTaskIds = new Set(data.todayFailedTaskIds || []);
+            todayFailedSubtaskIds = new Set(data.todayFailedSubtaskIds || []);
+          } catch (e) {}
+        } else {
+          // 尝试从旧键名迁移（兼容 v1.28 之前的数据）
+          const oldKey = 'rpg_v3_final_opt_v128';
+          const oldData = localStorage.getItem(oldKey);
+          if (oldData) {
+            try {
+              const data = JSON.parse(oldData);
+              tasks = data.tasks || [];
+              completedTasks = data.completedTasks || [];
+              rewards = data.rewards || [];
+              fails = data.fails || [];
+              lifePoints = data.lifePoints || 0;
+              consecutiveDays = data.consecutiveDays || 0;
+              lastResetDate = data.lastResetDate || '';
+              todayCompletedTaskIds = new Set(data.todayCompletedTaskIds || []);
+              todayCompletedSubtaskIds = new Set(data.todayCompletedSubtaskIds || []);
+              todayFailedTaskIds = new Set(data.todayFailedTaskIds || []);
+              todayFailedSubtaskIds = new Set(data.todayFailedSubtaskIds || []);
+              localStorage.removeItem(oldKey);
+            } catch (e) {}
+          } else {
+            initExampleData();
+          }
+        }
+        tasks.forEach(t => { if (!t.subtasks) t.subtasks = []; });
+        completedTasks.forEach(t => { if (!t.subtasks) t.subtasks = []; });
+        recalcLevel();
+        checkAndAutoNewDay();
+      }
+      function saveData() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          tasks, completedTasks, rewards, fails, lifePoints, consecutiveDays, lastResetDate,
+          todayCompletedTaskIds: Array.from(todayCompletedTaskIds),
+          todayCompletedSubtaskIds: Array.from(todayCompletedSubtaskIds),
+          todayFailedTaskIds: Array.from(todayFailedTaskIds),
+          todayFailedSubtaskIds: Array.from(todayFailedSubtaskIds)
+        }));
+      }
+
+      // 自动新的一天
+      function checkAndAutoNewDay() {
+        const today = new Date().toISOString().split('T')[0];
+        if (lastResetDate !== today) {
+          tasks.forEach(t => {
+            if (t.subtasks) {
+              t.subtasks.forEach(s => {
+                if (s.type === 'daily') {
+                  s.completed = false;
+                }
+              });
+            }
+          });
+          todayCompletedTaskIds.clear();
+          todayCompletedSubtaskIds.clear();
+          todayFailedTaskIds.clear();
+          todayFailedSubtaskIds.clear();
+          lastResetDate = today;
+          consecutiveDays += 1;
+          saveData();
+          refreshAll();
+        }
+      }
+
+      function recalcLevel() {
+        const newLevel = Math.floor(lifePoints / LIFE_PER_LEVEL) + 1;
+        if (newLevel > level) {
+          level = newLevel;
+          showLevelUp();
+        } else {
+          level = newLevel;
+        }
+        updateLevelUI();
+      }
+      let levelUpTimer = null;
+      function showLevelUp() {
+        const toast = document.getElementById('levelUpToast');
+        toast.style.opacity = 1;
+        if (levelUpTimer) clearTimeout(levelUpTimer);
+        levelUpTimer = setTimeout(() => { toast.style.opacity = 0; }, 1500);
+      }
+      function updateLevelUI() {
+        document.getElementById('levelDisplay').innerText = `Lv.${level}`;
+        const exp = lifePoints % LIFE_PER_LEVEL;
+        const percent = (exp / LIFE_PER_LEVEL) * 100;
+        document.getElementById('expBarFill').style.width = percent + '%';
+        document.getElementById('lifePointsDisplay').innerHTML = `❤️ ${lifePoints} 生活值`;
+      }
+
+      // 渲染函数
+      function renderTaskList() {
+        const container = document.getElementById('taskListContainer');
+        if (!container) return;
+        let filtered = tasks.filter(t => !t.completed);
+        if (currentFilter !== 'all') {
+          filtered = filtered.filter(t => t.type === currentFilter);
+        }
+        if (filtered.length === 0) {
+          container.innerHTML = '<div class="empty" style="text-align:center;padding:1rem;">✨ 暂无任务</div>';
+          return;
+        }
+        let html = '';
+        filtered.forEach(t => html += renderTaskCard(t, 'task'));
+        container.innerHTML = html;
+      }
+      function renderCompletedPool() {
+        const container = document.getElementById('completedPoolContainer');
+        if (!container) return;
+        if (completedTasks.length === 0) {
+          container.innerHTML = '<div class="empty" style="text-align:center;padding:1rem;">🏆 暂无完成任务</div>';
+          return;
+        }
+        let html = '';
+        completedTasks.forEach(t => html += renderTaskCard(t, 'completed'));
+        container.innerHTML = html;
+      }
+      function renderTaskCard(task, source) {
+        const typeIcon = task.type === 'main' ? '💼' : (task.type === 'daily' ? '🔁' : '🌱');
+        let actionsHtml = '';
+        if (source === 'task') {
+          if (task.type !== 'main') {
+            if (task.inDailyPool) {
+              actionsHtml += `<button class="action-btn remove-btn" data-action="remove" data-id="${task.id}">🚫 移出副本</button>`;
+            } else {
+              actionsHtml += `<button class="action-btn join-btn" data-action="join" data-id="${task.id}">➕ 加入副本</button>`;
+            }
+          }
+          actionsHtml += `<button class="delete-task-btn" data-delete-id="${task.id}" title="删除任务">✖</button>`;
+        } else {
+          // 荣誉殿堂：重新激活 + 删除按钮
+          actionsHtml = `<button class="action-btn reactivate-btn" data-action="reactivate" data-id="${task.id}">🔄 重新激活</button>`;
+          actionsHtml += `<button class="delete-task-btn" data-delete-id="${task.id}" title="从荣誉殿堂删除">✖</button>`;
+        }
+        return `<div class="task-card" data-id="${task.id}" data-source="${source}">
+          <div class="task-header" data-id="${task.id}">
+            <div style="display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;">
+              <span class="task-tag">${typeIcon}</span>
+              <span><strong>${escapeHtml(task.name)}</strong></span>
+            </div>
+            <span>⚡${task.lifeValue}</span>
+          </div>
+          <div class="task-reward-badge">🎁 ${escapeHtml(task.reward)}</div>
+          <div class="task-actions">
+            ${actionsHtml}
+          </div>
+        </div>`;
+      }
+
+      function renderTodo() {
+        const container = document.getElementById('todoContainer');
+        if (!container) return;
+        let todos = [];
+        const activeTasks = tasks.filter(t => !t.completed && (t.type === 'main' || (t.type === 'daily' && t.inDailyPool) || (t.type === 'growth' && t.inDailyPool)));
+        activeTasks.forEach(task => {
+          const mainFailed = todayFailedTaskIds.has(task.id);
+          const mainCompleted = todayCompletedTaskIds.has(task.id);
+          const mainDisabled = mainCompleted || mainFailed;
+          todos.push({
+            id: task.id,
+            name: `[主] ${task.name}`,
+            reward: task.reward,
+            lifeValue: task.lifeValue,
+            type: task.type,
+            isSubtask: false,
+            parentId: null,
+            disabled: mainDisabled,
+            failed: mainFailed,
+            completed: mainCompleted
+          });
+          if (task.subtasks && task.subtasks.length > 0) {
+            task.subtasks.forEach(sub => {
+              const subDisabled = mainDisabled || todayCompletedSubtaskIds.has(sub.id) || todayFailedSubtaskIds.has(sub.id);
+              const subCompleted = todayCompletedSubtaskIds.has(sub.id);
+              const subFailed = todayFailedSubtaskIds.has(sub.id);
+              todos.push({
+                id: sub.id,
+                name: `   ↳ ${sub.name}`,
+                reward: task.reward,
+                lifeValue: sub.lifeValue || task.lifeValue,
+                type: task.type,
+                isSubtask: true,
+                parentId: task.id,
+                disabled: subDisabled,
+                failed: subFailed,
+                completed: subCompleted
+              });
+            });
+          }
+        });
+        if (todos.length === 0) {
+          container.innerHTML = '<div style="text-align:center;padding:1rem;">✨ 今日没有待办</div>';
+          return;
+        }
+        let html = '';
+        todos.forEach(todo => {
+          const typeIcon = todo.type === 'main' ? '💼' : (todo.type === 'daily' ? '🔁' : '🌱');
+          const statusText = todo.completed ? '✅已完成' : (todo.failed ? '⏭️已跳过' : '');
+          html += `<div class="todo-item" data-id="${todo.id}" data-issubtask="${todo.isSubtask}" data-parentid="${todo.parentId || ''}">
+            <div class="todo-info">
+              <span class="todo-tag">${typeIcon}</span>
+              <span><strong>${escapeHtml(todo.name)}</strong></span>
+              <span class="todo-reward">🎁 ${escapeHtml(todo.reward)} ⚡+${todo.lifeValue}</span>
+              ${statusText ? `<span style="font-size:0.8rem;">${statusText}</span>` : ''}
+            </div>
+            <div class="todo-actions">
+              <button class="complete-todo-btn" ${todo.disabled ? 'disabled' : ''}>完成</button>
+              <button class="fail-todo-btn" ${todo.disabled ? 'disabled' : ''}>失败</button>
+            </div>
+          </div>`;
+        });
+        container.innerHTML = html;
+      }
+
+      // 渲染记录档案（含奖励描述）
+      function renderRecords() {
+        const container = document.getElementById('recordContainer');
+        if (!container) return;
+        let data = [];
+        if (currentRecordTab === 'reward') {
+          data = rewards.slice();
+        } else if (currentRecordTab === 'fail') {
+          data = fails.slice();
+        } else {
+          data = [
+            ...rewards.map(r => ({ ...r, recordType: 'reward' })),
+            ...fails.map(f => ({ ...f, recordType: 'fail' }))
+          ];
+          data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+        const now = new Date();
+        let filtered = data;
+        if (recordDateFilter === 'today') {
+          filtered = data.filter(item => new Date(item.date).toDateString() === now.toDateString());
+        } else if (recordDateFilter === 'week') {
+          const oneWeekAgo = new Date(now.getTime() - 7*86400000);
+          filtered = data.filter(item => new Date(item.date) >= oneWeekAgo);
+        }
+        if (filtered.length === 0) {
+          container.innerHTML = '<div style="text-align:center;padding:0.5rem;">暂无记录</div>';
+          return;
+        }
+        let html = '';
+        filtered.slice(-20).reverse().forEach(item => {
+          const entryClass = (item.recordType === 'reward' || currentRecordTab === 'reward') ? 'reward-entry' : 'fail-entry';
+          const lifeText = (item.recordType === 'reward' || currentRecordTab === 'reward') ? `⚡+${item.lifeValue}` : `⚡+${item.lifeValue} (未获得)`;
+          const rewardDesc = item.reward ? `🎁 ${item.reward}` : '';
+          html += `<div class="${entryClass}">
+            <strong>${escapeHtml(item.taskName)}</strong> ${rewardDesc ? '· ' + escapeHtml(rewardDesc) : ''} · ${lifeText}
+            <div style="font-size:0.6rem;">${item.date}</div>
+          </div>`;
+        });
+        container.innerHTML = html;
+      }
+
+      function escapeHtml(s) {
+        if (!s) return '';
+        return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      }
+
+      function refreshAll() {
+        renderTaskList();
+        renderCompletedPool();
+        renderTodo();
+        renderRecords();
+        updateLevelUI();
+        // 如果详情弹窗开着，刷新子任务列表
+        if (currentDetailTaskId && currentDetailTaskSource) {
+          let task = (currentDetailTaskSource === 'task') ? tasks.find(t => t.id === currentDetailTaskId) : completedTasks.find(t => t.id === currentDetailTaskId);
+          if (task) {
+            renderSubtasks(task, currentDetailTaskSource);
+          } else {
+            document.getElementById('taskDetailModal').classList.remove('active');
+            currentDetailTaskId = null;
+            currentDetailTaskSource = null;
+          }
+        }
+      }
+
+      // ---------- 核心操作 ----------
+      function joinDailyPool(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task && (task.type === 'daily' || task.type === 'growth')) {
+          task.inDailyPool = true;
+          saveData(); refreshAll();
+        }
+      }
+      function removeFromDailyPool(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task && (task.type === 'daily' || task.type === 'growth')) {
+          task.inDailyPool = false;
+          saveData(); refreshAll();
+        }
+      }
+
+      // 将任务移动到荣誉殿堂
+      function moveToCompleted(task) {
+        task.completed = true;
+        completedTasks.push({ ...task });
+        tasks = tasks.filter(t => t.id !== task.id);
+        // 清除今日标记
+        todayCompletedTaskIds.delete(task.id);
+        todayFailedTaskIds.delete(task.id);
+        if (task.subtasks) {
+          task.subtasks.forEach(sub => {
+            todayCompletedSubtaskIds.delete(sub.id);
+            todayFailedSubtaskIds.delete(sub.id);
+          });
+        }
+      }
+
+      function completeTask(taskId, isSubtask, parentId) {
+        if (isSubtask) {
+          const parent = tasks.find(t => t.id === parentId);
+          if (!parent) return;
+          const subtask = parent.subtasks.find(s => s.id === taskId);
+          if (!subtask) return;
+          if (todayCompletedSubtaskIds.has(taskId) || todayFailedSubtaskIds.has(taskId)) return;
+          if (todayCompletedTaskIds.has(parentId) || todayFailedTaskIds.has(parentId)) return;
+
+          lifePoints += subtask.lifeValue || parent.lifeValue;
+          rewards.push({
+            taskName: parent.name + ' · ' + subtask.name,
+            reward: parent.reward,
+            lifeValue: subtask.lifeValue || parent.lifeValue,
+            type: parent.type,
+            date: new Date().toLocaleString()
+          });
+          if (parent.totalProgress > 0) {
+            parent.currentProgress = parent.subtasks.filter(s => s.completed).length;
+          }
+          todayCompletedSubtaskIds.add(taskId);
+          saveData(); recalcLevel(); refreshAll();
+        } else {
+          const task = tasks.find(t => t.id === taskId);
+          if (!task) return;
+          if (todayCompletedTaskIds.has(taskId) || todayFailedTaskIds.has(taskId)) return;
+
+          lifePoints += task.lifeValue;
+          rewards.push({
+            taskName: task.name,
+            reward: task.reward,
+            lifeValue: task.lifeValue,
+            type: task.type,
+            date: new Date().toLocaleString()
+          });
+
+          if (task.type === 'main' || task.type === 'growth') {
+            moveToCompleted(task);
+          } else {
+            // 日常任务普通完成：只标记今日完成
+            todayCompletedTaskIds.add(taskId);
+          }
+          saveData(); recalcLevel(); refreshAll();
+        }
+      }
+
+      function failTask(taskId, isSubtask, parentId) {
+        let taskName = '', lifeValue = 0, reward = '';
+        if (isSubtask) {
+          if (todayCompletedSubtaskIds.has(taskId) || todayFailedSubtaskIds.has(taskId)) return;
+          const parent = tasks.find(t => t.id === parentId);
+          if (!parent) return;
+          const subtask = parent.subtasks.find(s => s.id === taskId);
+          if (!subtask) return;
+          if (todayCompletedTaskIds.has(parentId) || todayFailedTaskIds.has(parentId)) return;
+          taskName = parent.name + ' · ' + subtask.name;
+          lifeValue = subtask.lifeValue || parent.lifeValue;
+          reward = parent.reward;
+          todayFailedSubtaskIds.add(taskId);
+        } else {
+          if (todayCompletedTaskIds.has(taskId) || todayFailedTaskIds.has(taskId)) return;
+          const task = tasks.find(t => t.id === taskId);
+          if (!task) return;
+          taskName = task.name;
+          lifeValue = task.lifeValue;
+          reward = task.reward;
+          todayFailedTaskIds.add(taskId);
+        }
+        fails.push({ taskName, lifeValue, reward, date: new Date().toLocaleString() });
+        saveData(); refreshAll();
+      }
+
+      function finalCompleteTask(taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || task.type !== 'daily') return;
+        moveToCompleted(task);
+        saveData(); refreshAll();
+      }
+
+      function reactivateTask(taskId) {
+        const idx = completedTasks.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+        const task = completedTasks[idx];
+        task.completed = false;
+        if (task.subtasks) task.subtasks.forEach(s => s.completed = false);
+        task.inDailyPool = false;
+        tasks.push(task);
+        completedTasks.splice(idx, 1);
+        saveData(); refreshAll();
+      }
+
+      // 删除任务（从任务池删除，记录保留）
+      function deleteTask(taskId) {
+        const idx = tasks.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+        if (!confirm('确定删除该任务？记录保留。')) return;
+        const task = tasks[idx];
+        todayCompletedTaskIds.delete(taskId);
+        todayFailedTaskIds.delete(taskId);
+        if (task.subtasks) {
+          task.subtasks.forEach(sub => {
+            todayCompletedSubtaskIds.delete(sub.id);
+            todayFailedSubtaskIds.delete(sub.id);
+          });
+        }
+        tasks.splice(idx, 1);
+        saveData(); refreshAll();
+      }
+
+      // 从荣誉殿堂删除任务（记录保留）
+      function deleteCompletedTask(taskId) {
+        const idx = completedTasks.findIndex(t => t.id === taskId);
+        if (idx === -1) return;
+        if (!confirm('确定从荣誉殿堂删除该任务？记录保留。')) return;
+        completedTasks.splice(idx, 1);
+        saveData(); refreshAll();
+      }
+
+      function deleteSubtask(parentId, subtaskId) {
+        const parent = tasks.find(t => t.id === parentId);
+        if (!parent || !parent.subtasks) return;
+        const subIdx = parent.subtasks.findIndex(s => s.id === subtaskId);
+        if (subIdx === -1) return;
+        parent.subtasks.splice(subIdx, 1);
+        if (parent.totalProgress > 0) parent.totalProgress -= 1;
+        saveData(); refreshAll();
+      }
+
+      // ---------- 弹窗 ----------
+      function openTaskDetail(taskId, source) {
+        let task = (source === 'task') ? tasks.find(t => t.id === taskId) : completedTasks.find(t => t.id === taskId);
+        if (!task) return;
+        currentDetailTaskId = taskId;
+        currentDetailTaskSource = source;
+        document.getElementById('detailName').value = task.name || '';
+        document.getElementById('detailReward').value = task.reward || '';
+        document.getElementById('detailLife').value = task.lifeValue || 0;
+        document.getElementById('detailType').value = task.type || 'main';
+        // 总进度已移除，不再显示
+        document.getElementById('finalCompleteContainer').style.display = (task.type === 'daily' && source === 'task') ? 'block' : 'none';
+        renderSubtasks(task, source);
+        document.getElementById('taskDetailModal').classList.add('active');
+      }
+
+      function renderSubtasks(task, source) {
+        const container = document.getElementById('subtaskListContainer');
+        if (!task.subtasks || task.subtasks.length === 0) {
+          container.innerHTML = '<p>暂无子任务</p>';
+          return;
+        }
+        let html = '';
+        task.subtasks.forEach(s => {
+          const completed = s.completed || todayCompletedSubtaskIds.has(s.id);
+          const failed = todayFailedSubtaskIds.has(s.id);
+          const disabled = completed || failed || (source === 'completed');
+          html += `<div class="subtask-item">
+            <div>
+              <span><strong>${escapeHtml(s.name)}</strong> (${s.type}) +${s.lifeValue}</span>
+              ${completed ? '<span style="color:green;">✅已完成</span>' : ''}
+              ${failed ? '<span style="color:red;">⏭️已跳过</span>' : ''}
+            </div>
+            <div class="subtask-actions">
+              <button class="subtask-complete-btn" data-subtask-id="${s.id}" ${disabled ? 'disabled' : ''}>完成</button>
+              <button class="subtask-fail-btn" data-subtask-id="${s.id}" ${disabled ? 'disabled' : ''}>失败</button>
+              <button class="subtask-delete-btn" data-subtask-id="${s.id}" ${source==='completed'?'disabled':''}>删</button>
+            </div>
+          </div>`;
+        });
+        container.innerHTML = html;
+        container.querySelectorAll('.subtask-complete-btn').forEach(btn => {
+          btn.addEventListener('click', e => { completeTask(e.target.dataset.subtaskId, true, task.id); });
+        });
+        container.querySelectorAll('.subtask-fail-btn').forEach(btn => {
+          btn.addEventListener('click', e => { failTask(e.target.dataset.subtaskId, true, task.id); });
+        });
+        container.querySelectorAll('.subtask-delete-btn').forEach(btn => {
+          btn.addEventListener('click', e => { deleteSubtask(task.id, e.target.dataset.subtaskId); });
+        });
+      }
+
+      // 保存任务修改（已移除总进度保存）
+      document.getElementById('saveTaskDetailBtn')?.addEventListener('click', () => {
+        if (!currentDetailTaskId) return;
+        let task = tasks.find(t => t.id === currentDetailTaskId) || completedTasks.find(t => t.id === currentDetailTaskId);
+        if (!task) return;
+        task.name = document.getElementById('detailName').value;
+        task.reward = document.getElementById('detailReward').value;
+        task.lifeValue = parseInt(document.getElementById('detailLife').value) || 0;
+        task.type = document.getElementById('detailType').value;
+        // 总进度不再保存，保留原值即可
+        saveData(); refreshAll();
+        document.getElementById('taskDetailModal').classList.remove('active');
+      });
+      document.getElementById('detailFinalCompleteBtn')?.addEventListener('click', () => {
+        if (currentDetailTaskId) { finalCompleteTask(currentDetailTaskId); document.getElementById('taskDetailModal').classList.remove('active'); }
+      });
+      document.getElementById('detailCompleteMainBtn')?.addEventListener('click', () => {
+        if (currentDetailTaskId) { completeTask(currentDetailTaskId, false, null); document.getElementById('taskDetailModal').classList.remove('active'); }
+      });
+      document.getElementById('detailFailMainBtn')?.addEventListener('click', () => {
+        if (currentDetailTaskId) { failTask(currentDetailTaskId, false, null); document.getElementById('taskDetailModal').classList.remove('active'); }
+      });
+      document.getElementById('closeModalBtn')?.addEventListener('click', () => {
+        document.getElementById('taskDetailModal').classList.remove('active');
+        currentDetailTaskId = null;
+        currentDetailTaskSource = null;
+      });
+      document.getElementById('addSubtaskInlineBtn')?.addEventListener('click', () => {
+        if (!currentDetailTaskId) return;
+        let task = tasks.find(t => t.id === currentDetailTaskId) || completedTasks.find(t => t.id === currentDetailTaskId);
+        if (!task) return;
+        const name = document.getElementById('subtaskNameInput').value.trim();
+        if (!name) { alert('请输入子任务名称'); return; }
+        const type = document.getElementById('subtaskTypeSelect').value;
+        const life = parseInt(document.getElementById('subtaskLifeInput').value) || 2;
+        const newSubtask = {
+          id: 'sub_' + Date.now() + Math.random(),
+          name, type, completed: false, lifeValue: life, parentId: task.id
+        };
+        if (!task.subtasks) task.subtasks = [];
+        task.subtasks.push(newSubtask);
+        if (task.totalProgress > 0) task.totalProgress += 1;
+        document.getElementById('subtaskNameInput').value = '';
+        document.getElementById('subtaskLifeInput').value = '2';
+        saveData(); renderSubtasks(task, currentDetailTaskSource);
+      });
+
+      // 日历
+      function openCalendarModal() {
+        document.getElementById('calendarModal').classList.add('active');
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('calendarDatePicker').value = today;
+        loadCalendarRecords();
+      }
+      function closeCalendarModal() {
+        document.getElementById('calendarModal').classList.remove('active');
+      }
+      function loadCalendarRecords() {
+        const dateStr = document.getElementById('calendarDatePicker').value;
+        const container = document.getElementById('calendarRecordsContainer');
+        const all = [ ...rewards.map(r=>({...r,recordType:'reward'})), ...fails.map(f=>({...f,recordType:'fail'})) ];
+        const filtered = all.filter(item => new Date(item.date).toISOString().split('T')[0] === dateStr);
+        if (filtered.length === 0) { container.innerHTML = '<div>该日无记录</div>'; return; }
+        let html = '';
+        filtered.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(item => {
+          const cls = item.recordType==='reward'?'reward-entry':'fail-entry';
+          const life = item.recordType==='reward'?`⚡+${item.lifeValue}`:`⚡+${item.lifeValue} (未获得)`;
+          const rewardDesc = item.reward ? `🎁 ${item.reward}` : '';
+          html += `<div class="${cls}"><strong>${escapeHtml(item.taskName)}</strong> ${rewardDesc ? '· ' + escapeHtml(rewardDesc) : ''} · ${life}<div style="font-size:0.6rem;">${item.date}</div></div>`;
+        });
+        container.innerHTML = html;
+      }
+      // 清除当天记录
+      function clearDayRecords() {
+        const dateStr = document.getElementById('calendarDatePicker').value;
+        if (!dateStr) return;
+        if (!confirm(`确定删除 ${dateStr} 的所有奖励和失败记录吗？`)) return;
+        const beforeCount = rewards.length + fails.length;
+        rewards = rewards.filter(r => new Date(r.date).toISOString().split('T')[0] !== dateStr);
+        fails = fails.filter(f => new Date(f.date).toISOString().split('T')[0] !== dateStr);
+        const afterCount = rewards.length + fails.length;
+        if (beforeCount !== afterCount) {
+          saveData();
+          loadCalendarRecords();
+          renderRecords();
+        } else {
+          alert('该日无记录可清除');
+        }
+      }
+
+      // 关于弹窗
+      function openAboutModal() {
+        document.getElementById('aboutModal').classList.add('active');
+      }
+      function closeAboutModal() {
+        document.getElementById('aboutModal').classList.remove('active');
+      }
+      function resetData() {
+        if (confirm('清除所有本地数据并重置为预设状态？')) {
+          localStorage.removeItem(STORAGE_KEY);
+          location.reload();
+        }
+      }
+
+      // 事件绑定
+      document.addEventListener('DOMContentLoaded', () => {
+        loadData(); refreshAll(); setInterval(checkAndAutoNewDay, 60000);
+        document.getElementById('addTaskBtn')?.addEventListener('click', () => {
+          const name = document.getElementById('taskNameInput').value.trim();
+          if (!name) return;
+          const reward = document.getElementById('rewardDescInput').value.trim() || '无';
+          const life = parseInt(document.getElementById('lifeValueInput').value) || 5;
+          const activeTab = document.querySelector('.type-tab.active');
+          const type = activeTab ? activeTab.dataset.type : 'daily';
+          const newTask = {
+            id: Date.now() + '-' + Math.random().toString(36).substr(2,4),
+            name, reward, lifeValue: life, type,
+            totalProgress: 0, currentProgress: 0,
+            inDailyPool: type === 'main' ? true : false,
+            completed: false, subtasks: []
+          };
+          tasks.push(newTask); saveData(); refreshAll();
+          document.getElementById('taskNameInput').value = '';
+          document.getElementById('rewardDescInput').value = '';
+        });
+
+        // 副本任务点击
+        document.getElementById('taskListContainer')?.addEventListener('click', e => {
+          if (e.target.closest('.delete-task-btn')) {
+            const btn = e.target.closest('.delete-task-btn');
+            e.stopPropagation(); deleteTask(btn.dataset.deleteId); return;
+          }
+          if (e.target.closest('[data-action]')) {
+            const btn = e.target.closest('[data-action]');
+            e.stopPropagation();
+            const action = btn.dataset.action;
+            const id = btn.dataset.id;
+            if (action === 'join') joinDailyPool(id);
+            else if (action === 'remove') removeFromDailyPool(id);
+            return;
+          }
+          const header = e.target.closest('.task-header');
+          if (header) openTaskDetail(header.dataset.id, 'task');
+        });
+
+        // 荣誉殿堂点击（处理删除和重新激活）
+        document.getElementById('completedPoolContainer')?.addEventListener('click', e => {
+          if (e.target.closest('.delete-task-btn')) {
+            const btn = e.target.closest('.delete-task-btn');
+            e.stopPropagation(); deleteCompletedTask(btn.dataset.deleteId); return;
+          }
+          if (e.target.closest('[data-action]')) {
+            const btn = e.target.closest('[data-action]');
+            const action = btn.dataset.action;
+            const id = btn.dataset.id;
+            if (action === 'reactivate') reactivateTask(id);
+            return;
+          }
+          const header = e.target.closest('.task-header');
+          if (header) openTaskDetail(header.dataset.id, 'completed');
+        });
+
+        // 今日待办
+        document.getElementById('todoContainer')?.addEventListener('click', e => {
+          const btn = e.target.closest('button');
+          if (!btn) return;
+          const todo = btn.closest('.todo-item');
+          if (!todo) return;
+          const id = todo.dataset.id;
+          const isSub = todo.dataset.issubtask === 'true';
+          const pid = todo.dataset.parentid || null;
+          if (btn.classList.contains('complete-todo-btn')) completeTask(id, isSub, pid);
+          else if (btn.classList.contains('fail-todo-btn')) failTask(id, isSub, pid);
+        });
+
+        // 分类
+        document.querySelectorAll('#taskFilterRow .filter-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#taskFilterRow .filter-btn').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active'); currentFilter = btn.dataset.filter; renderTaskList();
+          });
+        });
+        document.querySelectorAll('.record-tab').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.record-tab').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active'); currentRecordTab = btn.dataset.record; renderRecords();
+          });
+        });
+        document.querySelectorAll('#recordDateFilterRow .filter-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#recordDateFilterRow .filter-btn').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active'); recordDateFilter = btn.dataset.dateFilter; renderRecords();
+          });
+        });
+        document.getElementById('clearRecordsBtn')?.addEventListener('click', () => {
+          if (currentRecordTab === 'all') {
+            if (confirm('清空所有奖励和失败记录？')) { rewards = []; fails = []; }
+          } else if (currentRecordTab === 'reward') {
+            if (confirm('清空所有奖励记录？')) rewards = [];
+          } else {
+            if (confirm('清空所有失败记录？')) fails = [];
+          }
+          saveData(); renderRecords();
+        });
+        document.querySelectorAll('.type-tab').forEach(btn => {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.type-tab').forEach(b=>b.classList.remove('active'));
+            this.classList.add('active');
+          });
+        });
+
+        // 日历
+        document.getElementById('openCalendarBtn')?.addEventListener('click', openCalendarModal);
+        document.getElementById('closeCalendarBtn')?.addEventListener('click', closeCalendarModal);
+        document.getElementById('calendarDatePicker')?.addEventListener('change', loadCalendarRecords);
+        document.getElementById('clearDayBtn')?.addEventListener('click', clearDayRecords);
+
+        // 关于弹窗
+        document.getElementById('aboutLink')?.addEventListener('click', openAboutModal);
+        document.getElementById('closeAboutBtn')?.addEventListener('click', closeAboutModal);
+        document.getElementById('resetDataBtn')?.addEventListener('click', resetData);
+      });
+    })();
+  </script>
+</body>
+</html>
