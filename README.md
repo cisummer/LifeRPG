@@ -1,4 +1,4 @@
-📋 LifeRPG · V1.30  
+📋 LifeRPG · V1.31 
 https://liferpgcn.netlify.app/
 
 一个将日常任务游戏化的效率工具
@@ -13,6 +13,6 @@ https://liferpgcn.netlify.app/
 
 👨‍💻 开发者：HappyZhao
 
-📅 版本日期：2025.03
+📅 版本日期：2026.03
 
 🔧 数据存储在浏览器本地
