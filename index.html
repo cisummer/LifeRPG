@@ -33,6 +33,22 @@
       border: 2px solid rgba(255, 255, 255, 0.7);
     }
 
+    /* 自定义滚动条 */
+    .task-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .task-scroll::-webkit-scrollbar-track {
+      background: #e0e9f2;
+      border-radius: 10px;
+    }
+    .task-scroll::-webkit-scrollbar-thumb {
+      background: #8aa9c2;
+      border-radius: 10px;
+    }
+    .task-scroll::-webkit-scrollbar-thumb:hover {
+      background: #6b8da8;
+    }
+
     /* 状态栏 */
     .player-status {
       display: flex;
@@ -201,6 +217,10 @@
     .primary-btn:hover {
       background: #1e6343;
     }
+    .primary-btn:active {
+      transform: scale(0.97);
+      background: #185236;
+    }
 
     /* 两列网格 */
     .two-columns {
@@ -263,7 +283,9 @@
       font-size: 0.9rem;
       transition: 0.1s;
     }
-
+    .filter-btn:active {
+      transform: scale(0.95);
+    }
     .filter-btn.active {
       background: #336f95;
       color: white;
@@ -330,6 +352,9 @@
       font-size: 0.75rem;
       transition: 0.1s;
     }
+    .action-btn:active {
+      transform: scale(0.95);
+    }
     .join-btn {
       background: #2e9a6e;
       color: white;
@@ -357,6 +382,9 @@
       justify-content: center;
       font-size: 12px;
       margin-left: auto;
+    }
+    .delete-task-btn:active {
+      transform: scale(0.9);
     }
     .reactivate-btn {
       background: #f0b34b;
@@ -405,6 +433,7 @@
       color: white;
       font-weight: 600;
       cursor: pointer;
+      transition: 0.1s;
     }
     .fail-todo-btn {
       background: #c95a5a;
@@ -414,11 +443,24 @@
       color: white;
       font-weight: 600;
       cursor: pointer;
+      transition: 0.1s;
+    }
+    .complete-todo-btn:active,
+    .fail-todo-btn:active {
+      transform: scale(0.95);
     }
     .complete-todo-btn:disabled,
     .fail-todo-btn:disabled {
       background: #bbbbbb;
       cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 子任务缩进增强 */
+    .todo-item[data-issubtask="true"] .todo-info {
+      margin-left: 1.2rem;
+      border-left: 2px dashed #9bb7d4;
+      padding-left: 0.8rem;
     }
 
     /* 记录条目 */
@@ -563,7 +605,7 @@
       margin: 0.5rem;
     }
 
-    /* 任务详情弹窗（已移除总进度） */
+    /* 任务详情弹窗 */
     .modal {
       display: none;
       position: fixed;
@@ -700,11 +742,11 @@
     <div class="add-task-panel">
       <div class="field">
         <label>任务名称</label>
-        <input type="text" id="taskNameInput" placeholder="例: 工作赚钱（三月）">
+        <input type="text" id="taskNameInput" placeholder="例: 工作赚钱（三月）" autocomplete="off">
       </div>
       <div class="field">
         <label>奖励描述</label>
-        <input type="text" id="rewardDescInput" placeholder="例: 月入百万">
+        <input type="text" id="rewardDescInput" placeholder="例: 月入百万" autocomplete="off">
       </div>
       <div class="field">
         <label>生活值</label>
@@ -774,7 +816,7 @@
   <!-- 关于弹窗（开发者 HappyZhao） -->
   <div class="about-modal" id="aboutModal">
     <div class="about-content">
-      <h2>📋 LifeRPG · V1.30</h2>
+      <h2>📋 生活RPG · V1.30</h2>
       <p>一个将日常任务游戏化的效率工具</p>
       <p>✨ 核心功能：</p>
       <p>· 主线/日常/成长任务分类<br>· 子任务管理<br>· 今日副本手动加入<br>· 荣誉殿堂收纳完成<br>· 奖励/失败记录日历</p>
@@ -786,7 +828,7 @@
     </div>
   </div>
 
-  <!-- 任务详情弹窗（已移除总进度） -->
+  <!-- 任务详情弹窗 -->
   <div class="modal" id="taskDetailModal">
     <div class="modal-content">
       <h3>✏️ 任务详情</h3>
@@ -810,7 +852,6 @@
           <option value="growth">成长</option>
         </select>
       </div>
-      <!-- 总进度已移除 -->
 
       <!-- 添加子任务内联 -->
       <div style="background: #eaf2fa; border-radius: 2rem; padding: 1rem; margin: 1rem 0;">
@@ -884,10 +925,10 @@
       let currentDetailTaskId = null;
       let currentDetailTaskSource = null; // 'task' 或 'completed'
 
-      // 存储键名（统一为 LifeRPG_Data）
+      // 存储键名（统一为 LifeRPG_Data，已移除旧迁移）
       const STORAGE_KEY = 'LifeRPG_Data';
 
-      // 预设数据（修改了 t2 的 reward 为 "月入百万"）
+      // 预设数据
       function initExampleData() {
         if (tasks.length) return;
         const mainTask = {
@@ -908,7 +949,6 @@
           ],
         };
         tasks.push(mainTask);
-        // 工作赚钱（三月）奖励改为 月入百万
         tasks.push({
           id: 't2',
           name: '工作赚钱（三月）',
@@ -947,9 +987,9 @@
         });
       }
 
-      // 加载/存储（带旧数据迁移）
+      // 加载/存储（已移除旧数据迁移）
       function loadData() {
-        let saved = localStorage.getItem(STORAGE_KEY);
+        const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {
             const data = JSON.parse(saved);
@@ -966,28 +1006,7 @@
             todayFailedSubtaskIds = new Set(data.todayFailedSubtaskIds || []);
           } catch (e) {}
         } else {
-          // 尝试从旧键名迁移（兼容 v1.28 之前的数据）
-          const oldKey = 'rpg_v3_final_opt_v128';
-          const oldData = localStorage.getItem(oldKey);
-          if (oldData) {
-            try {
-              const data = JSON.parse(oldData);
-              tasks = data.tasks || [];
-              completedTasks = data.completedTasks || [];
-              rewards = data.rewards || [];
-              fails = data.fails || [];
-              lifePoints = data.lifePoints || 0;
-              consecutiveDays = data.consecutiveDays || 0;
-              lastResetDate = data.lastResetDate || '';
-              todayCompletedTaskIds = new Set(data.todayCompletedTaskIds || []);
-              todayCompletedSubtaskIds = new Set(data.todayCompletedSubtaskIds || []);
-              todayFailedTaskIds = new Set(data.todayFailedTaskIds || []);
-              todayFailedSubtaskIds = new Set(data.todayFailedSubtaskIds || []);
-              localStorage.removeItem(oldKey);
-            } catch (e) {}
-          } else {
-            initExampleData();
-          }
+          initExampleData();
         }
         tasks.forEach(t => { if (!t.subtasks) t.subtasks = []; });
         completedTasks.forEach(t => { if (!t.subtasks) t.subtasks = []; });
@@ -1093,7 +1112,6 @@
           }
           actionsHtml += `<button class="delete-task-btn" data-delete-id="${task.id}" title="删除任务">✖</button>`;
         } else {
-          // 荣誉殿堂：重新激活 + 删除按钮
           actionsHtml = `<button class="action-btn reactivate-btn" data-action="reactivate" data-id="${task.id}">🔄 重新激活</button>`;
           actionsHtml += `<button class="delete-task-btn" data-delete-id="${task.id}" title="从荣誉殿堂删除">✖</button>`;
         }
@@ -1140,7 +1158,7 @@
               const subFailed = todayFailedSubtaskIds.has(sub.id);
               todos.push({
                 id: sub.id,
-                name: `   ↳ ${sub.name}`,
+                name: `↳ ${sub.name}`,
                 reward: task.reward,
                 lifeValue: sub.lifeValue || task.lifeValue,
                 type: task.type,
@@ -1177,7 +1195,7 @@
         container.innerHTML = html;
       }
 
-      // 渲染记录档案（含奖励描述）
+      // 渲染记录档案
       function renderRecords() {
         const container = document.getElementById('recordContainer');
         if (!container) return;
@@ -1229,7 +1247,6 @@
         renderTodo();
         renderRecords();
         updateLevelUI();
-        // 如果详情弹窗开着，刷新子任务列表
         if (currentDetailTaskId && currentDetailTaskSource) {
           let task = (currentDetailTaskSource === 'task') ? tasks.find(t => t.id === currentDetailTaskId) : completedTasks.find(t => t.id === currentDetailTaskId);
           if (task) {
@@ -1258,12 +1275,10 @@
         }
       }
 
-      // 将任务移动到荣誉殿堂
       function moveToCompleted(task) {
         task.completed = true;
         completedTasks.push({ ...task });
         tasks = tasks.filter(t => t.id !== task.id);
-        // 清除今日标记
         todayCompletedTaskIds.delete(task.id);
         todayFailedTaskIds.delete(task.id);
         if (task.subtasks) {
@@ -1313,7 +1328,6 @@
           if (task.type === 'main' || task.type === 'growth') {
             moveToCompleted(task);
           } else {
-            // 日常任务普通完成：只标记今日完成
             todayCompletedTaskIds.add(taskId);
           }
           saveData(); recalcLevel(); refreshAll();
@@ -1365,7 +1379,6 @@
         saveData(); refreshAll();
       }
 
-      // 删除任务（从任务池删除，记录保留）
       function deleteTask(taskId) {
         const idx = tasks.findIndex(t => t.id === taskId);
         if (idx === -1) return;
@@ -1383,7 +1396,6 @@
         saveData(); refreshAll();
       }
 
-      // 从荣誉殿堂删除任务（记录保留）
       function deleteCompletedTask(taskId) {
         const idx = completedTasks.findIndex(t => t.id === taskId);
         if (idx === -1) return;
@@ -1412,7 +1424,6 @@
         document.getElementById('detailReward').value = task.reward || '';
         document.getElementById('detailLife').value = task.lifeValue || 0;
         document.getElementById('detailType').value = task.type || 'main';
-        // 总进度已移除，不再显示
         document.getElementById('finalCompleteContainer').style.display = (task.type === 'daily' && source === 'task') ? 'block' : 'none';
         renderSubtasks(task, source);
         document.getElementById('taskDetailModal').classList.add('active');
@@ -1454,7 +1465,7 @@
         });
       }
 
-      // 保存任务修改（已移除总进度保存）
+      // 保存任务修改（新增类型自动调整 inDailyPool）
       document.getElementById('saveTaskDetailBtn')?.addEventListener('click', () => {
         if (!currentDetailTaskId) return;
         let task = tasks.find(t => t.id === currentDetailTaskId) || completedTasks.find(t => t.id === currentDetailTaskId);
@@ -1462,11 +1473,20 @@
         task.name = document.getElementById('detailName').value;
         task.reward = document.getElementById('detailReward').value;
         task.lifeValue = parseInt(document.getElementById('detailLife').value) || 0;
-        task.type = document.getElementById('detailType').value;
-        // 总进度不再保存，保留原值即可
+        const newType = document.getElementById('detailType').value;
+        if (task.type !== newType) {
+          task.type = newType;
+          // 根据新类型自动设置 inDailyPool 默认值
+          if (newType === 'main') {
+            task.inDailyPool = true;
+          } else {
+            task.inDailyPool = false;
+          }
+        }
         saveData(); refreshAll();
         document.getElementById('taskDetailModal').classList.remove('active');
       });
+
       document.getElementById('detailFinalCompleteBtn')?.addEventListener('click', () => {
         if (currentDetailTaskId) { finalCompleteTask(currentDetailTaskId); document.getElementById('taskDetailModal').classList.remove('active'); }
       });
@@ -1526,7 +1546,6 @@
         });
         container.innerHTML = html;
       }
-      // 清除当天记录
       function clearDayRecords() {
         const dateStr = document.getElementById('calendarDatePicker').value;
         if (!dateStr) return;
@@ -1558,9 +1577,24 @@
         }
       }
 
-      // 事件绑定
+      // ---------- 事件绑定 ----------
       document.addEventListener('DOMContentLoaded', () => {
         loadData(); refreshAll(); setInterval(checkAndAutoNewDay, 60000);
+
+        // 回车提交添加任务
+        document.getElementById('taskNameInput')?.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('addTaskBtn').click();
+          }
+        });
+        document.getElementById('rewardDescInput')?.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('addTaskBtn').click();
+          }
+        });
+
         document.getElementById('addTaskBtn')?.addEventListener('click', () => {
           const name = document.getElementById('taskNameInput').value.trim();
           if (!name) return;
@@ -1599,7 +1633,7 @@
           if (header) openTaskDetail(header.dataset.id, 'task');
         });
 
-        // 荣誉殿堂点击（处理删除和重新激活）
+        // 荣誉殿堂点击
         document.getElementById('completedPoolContainer')?.addEventListener('click', e => {
           if (e.target.closest('.delete-task-btn')) {
             const btn = e.target.closest('.delete-task-btn');
@@ -1649,12 +1683,21 @@
           });
         });
         document.getElementById('clearRecordsBtn')?.addEventListener('click', () => {
+          let confirmMsg = '';
           if (currentRecordTab === 'all') {
-            if (confirm('清空所有奖励和失败记录？')) { rewards = []; fails = []; }
+            confirmMsg = '确定清空所有奖励和失败记录吗？';
           } else if (currentRecordTab === 'reward') {
-            if (confirm('清空所有奖励记录？')) rewards = [];
+            confirmMsg = '确定清空所有奖励记录吗？';
           } else {
-            if (confirm('清空所有失败记录？')) fails = [];
+            confirmMsg = '确定清空所有失败记录吗？';
+          }
+          if (!confirm(confirmMsg)) return;
+          if (currentRecordTab === 'all') {
+            rewards = []; fails = [];
+          } else if (currentRecordTab === 'reward') {
+            rewards = [];
+          } else {
+            fails = [];
           }
           saveData(); renderRecords();
         });
