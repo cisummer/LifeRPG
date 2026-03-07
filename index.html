@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-  <title>生活RPG · V1.30</title>
+  <title>生活RPG · V1.31</title>
   <style>
     * {
       box-sizing: border-box;
@@ -720,6 +720,33 @@
     .about-link:hover {
       color: #1f4b6e;
     }
+
+    /* 任务详情 · 子任务添加区域 */
+    .subtask-add-box {
+      background: #eaf2fa;
+      border-radius: 2rem;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    .subtask-inline-field {
+      padding: 0.5rem;
+      border-radius: 30px;
+      border: 2px solid #c2d9ec;
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    .subtask-add-btn {
+      width: 100%;
+    }
+    .subtask-list-container {
+      margin: 0.5rem 0;
+    }
+
+    /* 日历记录滚动区域 */
+    .calendar-records {
+      max-height: 400px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
@@ -809,19 +836,19 @@
       </div>
     </div>
     <div class="footer">
-      <span class="about-link" id="aboutLink">⭐ 关于本系统 · V1.30</span>
+      <span class="about-link" id="aboutLink">⭐ 关于本系统 · V1.31</span>
     </div>
   </div>
 
   <!-- 关于弹窗（开发者 HappyZhao） -->
   <div class="about-modal" id="aboutModal">
     <div class="about-content">
-      <h2>📋 生活RPG · V1.30</h2>
+      <h2>📋 生活RPG · V1.31</h2>
       <p>一个将日常任务游戏化的效率工具</p>
       <p>✨ 核心功能：</p>
       <p>· 主线/日常/成长任务分类<br>· 子任务管理<br>· 今日副本手动加入<br>· 荣誉殿堂收纳完成<br>· 奖励/失败记录日历</p>
       <p>👨‍💻 开发者：HappyZhao</p>
-      <p>📅 版本日期：2025.03</p>
+      <p>📅 版本日期：2026.03</p>
       <p>🔧 数据存储在浏览器本地</p>
       <button class="primary-btn" id="resetDataBtn">🔄 清除本地数据并重置为预设</button>
       <button class="close-btn" id="closeAboutBtn">关闭</button>
@@ -854,18 +881,18 @@
       </div>
 
       <!-- 添加子任务内联 -->
-      <div style="background: #eaf2fa; border-radius: 2rem; padding: 1rem; margin: 1rem 0;">
-        <input type="text" id="subtaskNameInput" placeholder="子任务名称" style="padding:0.5rem; border-radius:30px; border:2px solid #c2d9ec; width:100%; margin-bottom:0.5rem;">
-        <select id="subtaskTypeSelect" style="padding:0.5rem; border-radius:30px; width:100%; margin-bottom:0.5rem;">
+      <div class="subtask-add-box">
+        <input type="text" id="subtaskNameInput" class="subtask-inline-field" placeholder="子任务名称">
+        <select id="subtaskTypeSelect" class="subtask-inline-field">
           <option value="once">一次性</option>
           <option value="daily">日常循环</option>
         </select>
-        <input type="number" id="subtaskLifeInput" placeholder="生活值" value="2" min="1" style="padding:0.5rem; border-radius:30px; width:100%; margin-bottom:0.5rem;">
-        <button id="addSubtaskInlineBtn" class="primary-btn" style="width:100%;">➕ 添加子任务</button>
+        <input type="number" id="subtaskLifeInput" class="subtask-inline-field" placeholder="生活值" value="2" min="1">
+        <button id="addSubtaskInlineBtn" class="primary-btn subtask-add-btn">➕ 添加子任务</button>
       </div>
 
       <div><strong>子任务列表</strong></div>
-      <div id="subtaskListContainer" style="margin:0.5rem 0;"></div>
+      <div id="subtaskListContainer" class="subtask-list-container"></div>
 
       <!-- 主任务操作 -->
       <div class="main-task-actions">
@@ -892,7 +919,7 @@
         <input type="date" id="calendarDatePicker">
         <button class="clear-day-btn" id="clearDayBtn">🗑️ 清除当天</button>
       </div>
-      <div id="calendarRecordsContainer" style="max-height:400px; overflow-y:auto;"></div>
+      <div id="calendarRecordsContainer" class="calendar-records"></div>
       <div style="text-align: right; margin-top: 1rem;">
         <button id="closeCalendarBtn" class="close-btn">关闭</button>
       </div>
@@ -927,6 +954,9 @@
 
       // 存储键名（统一为 LifeRPG_Data，已移除旧迁移）
       const STORAGE_KEY = 'LifeRPG_Data';
+
+      // 缓存常用 DOM 元素
+      const els = {};
 
       // 预设数据
       function initExampleData() {
@@ -1025,8 +1055,24 @@
 
       // 自动新的一天
       function checkAndAutoNewDay() {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getDateKey(new Date());
+
+        // 首次运行仅记录当日，不做重置和连击计算
+        if (!lastResetDate) {
+          lastResetDate = today;
+          saveData();
+          return;
+        }
+
         if (lastResetDate !== today) {
+          // 仅在上一天有完成记录时才视为连续完成，否则重置为 0
+          const hadRewardYesterday = rewards.some(r => getDateKey(r.date) === lastResetDate);
+          if (hadRewardYesterday) {
+            consecutiveDays += 1;
+          } else {
+            consecutiveDays = 0;
+          }
+
           tasks.forEach(t => {
             if (t.subtasks) {
               t.subtasks.forEach(s => {
@@ -1041,7 +1087,6 @@
           todayFailedTaskIds.clear();
           todayFailedSubtaskIds.clear();
           lastResetDate = today;
-          consecutiveDays += 1;
           saveData();
           refreshAll();
         }
@@ -1065,16 +1110,20 @@
         levelUpTimer = setTimeout(() => { toast.style.opacity = 0; }, 1500);
       }
       function updateLevelUI() {
-        document.getElementById('levelDisplay').innerText = `Lv.${level}`;
+        const levelEl = els.levelDisplay || document.getElementById('levelDisplay');
+        const expEl = els.expBarFill || document.getElementById('expBarFill');
+        const lifeEl = els.lifePointsDisplay || document.getElementById('lifePointsDisplay');
+        if (!levelEl || !expEl || !lifeEl) return;
+        levelEl.innerText = `Lv.${level}`;
         const exp = lifePoints % LIFE_PER_LEVEL;
         const percent = (exp / LIFE_PER_LEVEL) * 100;
-        document.getElementById('expBarFill').style.width = percent + '%';
-        document.getElementById('lifePointsDisplay').innerHTML = `❤️ ${lifePoints} 生活值`;
+        expEl.style.width = percent + '%';
+        lifeEl.innerHTML = `❤️ ${lifePoints} 生活值`;
       }
 
       // 渲染函数
       function renderTaskList() {
-        const container = document.getElementById('taskListContainer');
+        const container = els.taskListContainer || document.getElementById('taskListContainer');
         if (!container) return;
         let filtered = tasks.filter(t => !t.completed);
         if (currentFilter !== 'all') {
@@ -1089,7 +1138,7 @@
         container.innerHTML = html;
       }
       function renderCompletedPool() {
-        const container = document.getElementById('completedPoolContainer');
+        const container = els.completedPoolContainer || document.getElementById('completedPoolContainer');
         if (!container) return;
         if (completedTasks.length === 0) {
           container.innerHTML = '<div class="empty" style="text-align:center;padding:1rem;">🏆 暂无完成任务</div>';
@@ -1131,7 +1180,7 @@
       }
 
       function renderTodo() {
-        const container = document.getElementById('todoContainer');
+        const container = els.todoContainer || document.getElementById('todoContainer');
         if (!container) return;
         let todos = [];
         const activeTasks = tasks.filter(t => !t.completed && (t.type === 'main' || (t.type === 'daily' && t.inDailyPool) || (t.type === 'growth' && t.inDailyPool)));
@@ -1197,7 +1246,7 @@
 
       // 渲染记录档案
       function renderRecords() {
-        const container = document.getElementById('recordContainer');
+        const container = els.recordContainer || document.getElementById('recordContainer');
         if (!container) return;
         let data = [];
         if (currentRecordTab === 'reward') {
@@ -1214,7 +1263,8 @@
         const now = new Date();
         let filtered = data;
         if (recordDateFilter === 'today') {
-          filtered = data.filter(item => new Date(item.date).toDateString() === now.toDateString());
+          const todayKey = getDateKey(now);
+          filtered = data.filter(item => getDateKey(item.date) === todayKey);
         } else if (recordDateFilter === 'week') {
           const oneWeekAgo = new Date(now.getTime() - 7*86400000);
           filtered = data.filter(item => new Date(item.date) >= oneWeekAgo);
@@ -1236,6 +1286,15 @@
         container.innerHTML = html;
       }
 
+      // 工具函数
+      function getDateKey(date) {
+        if (!(date instanceof Date)) {
+          date = new Date(date);
+        }
+        if (isNaN(date.getTime())) return '';
+        return date.toISOString().split('T')[0];
+      }
+
       function escapeHtml(s) {
         if (!s) return '';
         return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1252,7 +1311,7 @@
           if (task) {
             renderSubtasks(task, currentDetailTaskSource);
           } else {
-            document.getElementById('taskDetailModal').classList.remove('active');
+            (els.taskDetailModal || document.getElementById('taskDetailModal'))?.classList.remove('active');
             currentDetailTaskId = null;
             currentDetailTaskSource = null;
           }
@@ -1298,6 +1357,7 @@
           if (todayCompletedSubtaskIds.has(taskId) || todayFailedSubtaskIds.has(taskId)) return;
           if (todayCompletedTaskIds.has(parentId) || todayFailedTaskIds.has(parentId)) return;
 
+          subtask.completed = true;
           lifePoints += subtask.lifeValue || parent.lifeValue;
           rewards.push({
             taskName: parent.name + ' · ' + subtask.name,
@@ -1410,7 +1470,10 @@
         const subIdx = parent.subtasks.findIndex(s => s.id === subtaskId);
         if (subIdx === -1) return;
         parent.subtasks.splice(subIdx, 1);
-        if (parent.totalProgress > 0) parent.totalProgress -= 1;
+        if (parent.totalProgress > 0) {
+          parent.totalProgress = Math.max(0, parent.totalProgress - 1);
+          parent.currentProgress = parent.subtasks.filter(s => s.completed).length;
+        }
         saveData(); refreshAll();
       }
 
@@ -1465,77 +1528,23 @@
         });
       }
 
-      // 保存任务修改（新增类型自动调整 inDailyPool）
-      document.getElementById('saveTaskDetailBtn')?.addEventListener('click', () => {
-        if (!currentDetailTaskId) return;
-        let task = tasks.find(t => t.id === currentDetailTaskId) || completedTasks.find(t => t.id === currentDetailTaskId);
-        if (!task) return;
-        task.name = document.getElementById('detailName').value;
-        task.reward = document.getElementById('detailReward').value;
-        task.lifeValue = parseInt(document.getElementById('detailLife').value) || 0;
-        const newType = document.getElementById('detailType').value;
-        if (task.type !== newType) {
-          task.type = newType;
-          // 根据新类型自动设置 inDailyPool 默认值
-          if (newType === 'main') {
-            task.inDailyPool = true;
-          } else {
-            task.inDailyPool = false;
-          }
-        }
-        saveData(); refreshAll();
-        document.getElementById('taskDetailModal').classList.remove('active');
-      });
-
-      document.getElementById('detailFinalCompleteBtn')?.addEventListener('click', () => {
-        if (currentDetailTaskId) { finalCompleteTask(currentDetailTaskId); document.getElementById('taskDetailModal').classList.remove('active'); }
-      });
-      document.getElementById('detailCompleteMainBtn')?.addEventListener('click', () => {
-        if (currentDetailTaskId) { completeTask(currentDetailTaskId, false, null); document.getElementById('taskDetailModal').classList.remove('active'); }
-      });
-      document.getElementById('detailFailMainBtn')?.addEventListener('click', () => {
-        if (currentDetailTaskId) { failTask(currentDetailTaskId, false, null); document.getElementById('taskDetailModal').classList.remove('active'); }
-      });
-      document.getElementById('closeModalBtn')?.addEventListener('click', () => {
-        document.getElementById('taskDetailModal').classList.remove('active');
-        currentDetailTaskId = null;
-        currentDetailTaskSource = null;
-      });
-      document.getElementById('addSubtaskInlineBtn')?.addEventListener('click', () => {
-        if (!currentDetailTaskId) return;
-        let task = tasks.find(t => t.id === currentDetailTaskId) || completedTasks.find(t => t.id === currentDetailTaskId);
-        if (!task) return;
-        const name = document.getElementById('subtaskNameInput').value.trim();
-        if (!name) { alert('请输入子任务名称'); return; }
-        const type = document.getElementById('subtaskTypeSelect').value;
-        const life = parseInt(document.getElementById('subtaskLifeInput').value) || 2;
-        const newSubtask = {
-          id: 'sub_' + Date.now() + Math.random(),
-          name, type, completed: false, lifeValue: life, parentId: task.id
-        };
-        if (!task.subtasks) task.subtasks = [];
-        task.subtasks.push(newSubtask);
-        if (task.totalProgress > 0) task.totalProgress += 1;
-        document.getElementById('subtaskNameInput').value = '';
-        document.getElementById('subtaskLifeInput').value = '2';
-        saveData(); renderSubtasks(task, currentDetailTaskSource);
-      });
-
       // 日历
       function openCalendarModal() {
-        document.getElementById('calendarModal').classList.add('active');
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('calendarDatePicker').value = today;
+        const modal = els.calendarModal || document.getElementById('calendarModal');
+        if (!modal) return;
+        modal.classList.add('active');
+        const today = getDateKey(new Date());
+        (els.calendarDatePicker || document.getElementById('calendarDatePicker')).value = today;
         loadCalendarRecords();
       }
       function closeCalendarModal() {
-        document.getElementById('calendarModal').classList.remove('active');
+        (els.calendarModal || document.getElementById('calendarModal'))?.classList.remove('active');
       }
       function loadCalendarRecords() {
-        const dateStr = document.getElementById('calendarDatePicker').value;
-        const container = document.getElementById('calendarRecordsContainer');
+        const dateStr = (els.calendarDatePicker || document.getElementById('calendarDatePicker')).value;
+        const container = els.calendarRecordsContainer || document.getElementById('calendarRecordsContainer');
         const all = [ ...rewards.map(r=>({...r,recordType:'reward'})), ...fails.map(f=>({...f,recordType:'fail'})) ];
-        const filtered = all.filter(item => new Date(item.date).toISOString().split('T')[0] === dateStr);
+        const filtered = all.filter(item => getDateKey(item.date) === dateStr);
         if (filtered.length === 0) { container.innerHTML = '<div>该日无记录</div>'; return; }
         let html = '';
         filtered.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(item => {
@@ -1547,12 +1556,12 @@
         container.innerHTML = html;
       }
       function clearDayRecords() {
-        const dateStr = document.getElementById('calendarDatePicker').value;
+        const dateStr = (els.calendarDatePicker || document.getElementById('calendarDatePicker')).value;
         if (!dateStr) return;
         if (!confirm(`确定删除 ${dateStr} 的所有奖励和失败记录吗？`)) return;
         const beforeCount = rewards.length + fails.length;
-        rewards = rewards.filter(r => new Date(r.date).toISOString().split('T')[0] !== dateStr);
-        fails = fails.filter(f => new Date(f.date).toISOString().split('T')[0] !== dateStr);
+        rewards = rewards.filter(r => getDateKey(r.date) !== dateStr);
+        fails = fails.filter(f => getDateKey(f.date) !== dateStr);
         const afterCount = rewards.length + fails.length;
         if (beforeCount !== afterCount) {
           saveData();
@@ -1565,10 +1574,10 @@
 
       // 关于弹窗
       function openAboutModal() {
-        document.getElementById('aboutModal').classList.add('active');
+        (els.aboutModal || document.getElementById('aboutModal'))?.classList.add('active');
       }
       function closeAboutModal() {
-        document.getElementById('aboutModal').classList.remove('active');
+        (els.aboutModal || document.getElementById('aboutModal'))?.classList.remove('active');
       }
       function resetData() {
         if (confirm('清除所有本地数据并重置为预设状态？')) {
@@ -1577,10 +1586,23 @@
         }
       }
 
-      // ---------- 事件绑定 ----------
-      document.addEventListener('DOMContentLoaded', () => {
-        loadData(); refreshAll(); setInterval(checkAndAutoNewDay, 60000);
+      // ---------- DOM 缓存与事件绑定 ----------
+      function cacheElements() {
+        els.levelDisplay = document.getElementById('levelDisplay');
+        els.expBarFill = document.getElementById('expBarFill');
+        els.lifePointsDisplay = document.getElementById('lifePointsDisplay');
+        els.taskListContainer = document.getElementById('taskListContainer');
+        els.completedPoolContainer = document.getElementById('completedPoolContainer');
+        els.todoContainer = document.getElementById('todoContainer');
+        els.recordContainer = document.getElementById('recordContainer');
+        els.taskDetailModal = document.getElementById('taskDetailModal');
+        els.calendarModal = document.getElementById('calendarModal');
+        els.calendarDatePicker = document.getElementById('calendarDatePicker');
+        els.calendarRecordsContainer = document.getElementById('calendarRecordsContainer');
+        els.aboutModal = document.getElementById('aboutModal');
+      }
 
+      function bindEvents() {
         // 回车提交添加任务
         document.getElementById('taskNameInput')?.addEventListener('keypress', (e) => {
           if (e.key === 'Enter') {
@@ -1718,6 +1740,70 @@
         document.getElementById('aboutLink')?.addEventListener('click', openAboutModal);
         document.getElementById('closeAboutBtn')?.addEventListener('click', closeAboutModal);
         document.getElementById('resetDataBtn')?.addEventListener('click', resetData);
+
+        // 任务详情弹窗相关
+        document.getElementById('saveTaskDetailBtn')?.addEventListener('click', () => {
+          if (!currentDetailTaskId) return;
+          let task = tasks.find(t => t.id === currentDetailTaskId) || completedTasks.find(t => t.id === currentDetailTaskId);
+          if (!task) return;
+          task.name = document.getElementById('detailName').value;
+          task.reward = document.getElementById('detailReward').value;
+          task.lifeValue = parseInt(document.getElementById('detailLife').value) || 0;
+          const newType = document.getElementById('detailType').value;
+          if (task.type !== newType) {
+            task.type = newType;
+            // 根据新类型自动设置 inDailyPool 默认值
+            if (newType === 'main') {
+              task.inDailyPool = true;
+            } else {
+              task.inDailyPool = false;
+            }
+          }
+          saveData(); refreshAll();
+          document.getElementById('taskDetailModal').classList.remove('active');
+        });
+
+        document.getElementById('detailFinalCompleteBtn')?.addEventListener('click', () => {
+          if (currentDetailTaskId) { finalCompleteTask(currentDetailTaskId); document.getElementById('taskDetailModal').classList.remove('active'); }
+        });
+        document.getElementById('detailCompleteMainBtn')?.addEventListener('click', () => {
+          if (currentDetailTaskId) { completeTask(currentDetailTaskId, false, null); document.getElementById('taskDetailModal').classList.remove('active'); }
+        });
+        document.getElementById('detailFailMainBtn')?.addEventListener('click', () => {
+          if (currentDetailTaskId) { failTask(currentDetailTaskId, false, null); document.getElementById('taskDetailModal').classList.remove('active'); }
+        });
+        document.getElementById('closeModalBtn')?.addEventListener('click', () => {
+          document.getElementById('taskDetailModal').classList.remove('active');
+          currentDetailTaskId = null;
+          currentDetailTaskSource = null;
+        });
+        document.getElementById('addSubtaskInlineBtn')?.addEventListener('click', () => {
+          if (!currentDetailTaskId) return;
+          let task = tasks.find(t => t.id === currentDetailTaskId) || completedTasks.find(t => t.id === currentDetailTaskId);
+          if (!task) return;
+          const name = document.getElementById('subtaskNameInput').value.trim();
+          if (!name) { alert('请输入子任务名称'); return; }
+          const type = document.getElementById('subtaskTypeSelect').value;
+          const life = parseInt(document.getElementById('subtaskLifeInput').value) || 2;
+          const newSubtask = {
+            id: 'sub_' + Date.now() + Math.random(),
+            name, type, completed: false, lifeValue: life, parentId: task.id
+          };
+          if (!task.subtasks) task.subtasks = [];
+          task.subtasks.push(newSubtask);
+          if (task.totalProgress > 0) task.totalProgress += 1;
+          document.getElementById('subtaskNameInput').value = '';
+          document.getElementById('subtaskLifeInput').value = '2';
+          saveData(); renderSubtasks(task, currentDetailTaskSource);
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        cacheElements();
+        loadData();
+        refreshAll();
+        setInterval(checkAndAutoNewDay, 60000);
+        bindEvents();
       });
     })();
   </script>
