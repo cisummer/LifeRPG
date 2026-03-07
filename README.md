@@ -1,4 +1,6 @@
-📋 LifeRPG · V1.30  https://questlirpg.netlify.app/
+📋 LifeRPG · V1.30  
+https://liferpgcn.netlify.app/
+
 一个将日常任务游戏化的效率工具
 
 ✨ 核心功能：
